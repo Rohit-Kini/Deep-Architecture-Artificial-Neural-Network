@@ -1,0 +1,58 @@
+%%%%%%%%%% FUNCTION APPROXIMATION %%%%%%
+%%% ndata = number of patterns, n = number of nodes in hidden layer, alpha =
+%%% momentum, eta = learning rate, 
+%%% 
+%%
+%%% Generate a Gaussian Function %%%
+x=[-5:0.5:5]';
+y=[-5:0.5:5]';
+z=exp(-x.*x*0.1)*exp(-y.*y*0.1)'-0.5;
+[zi,zj] = size(z);
+
+mesh(x,y,z);
+%%% Convert into patterns as training data %%%
+targets = reshape(z,1,ndata);
+[xx, yy] = meshgrid(x,y);
+patterns = [reshape(xx,1,ndata);reshape(yy,1,ndata)];
+%%% Shuffling %%%
+permute = randperm(ndata);
+X = patterns(:,permute);
+T = targets(:,permute);
+[xi, xj] = size(X);
+[ti, tj] = size(T);
+%%% Input Parameters %%%
+n = 1;
+epoch = 1000;
+alpha = 0.9;
+eta = 0.001;
+Nhidden = 3;
+% Initialize the wieghts
+w = randn(Nhidden, xi+1);
+v = randn(ti, Nhidden+1);
+dw = 0; dv = 0; error = [];
+%% Algorithms
+for i=1:epoch
+    % Forward Pass
+    hin = w*[patterns;ones(1,)];
+    hout = [2./(1+exp(-hin))-1; ones(1,n)]; %Transfer Function
+    oin = v*hout;
+    out = 2./(1+exp(-oin))-1;
+    % Backward Pass
+    delta_o = (out-T).*((1+out).*(1-out))*0.5;
+    delta_h = (v'*delta_o).*((1+hout).*(1-hout))*0.5;
+    delta_h = delta_h(1:Nhidden,:);
+    % Weight Update
+    dw = (dw.*alpha)-(delta_h*X').*(1-alpha);
+    dv = (dv.*alpha)-(delta_o*hout').*(1-alpha);
+    W = w + dw.*eta;
+    V = v + dv.*eta;
+    % Cost Minimization Function
+    error = [error; sum(sum(abs(sign(out) - T) ./ 2))];
+end
+%% Plot
+x = 1:epoch;
+plot(x,error);
+zz = reshape(out,gridsize,gridsize);
+mesh(x,y,zz);
+axis([-5 5 -5 5 -0.7 0.7]);
+drawnow;
